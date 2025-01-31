@@ -22,5 +22,13 @@ def draw(state):
     return im
 
 
+def key_press(state, key):
+   return state
+
+
+def mouse_click(state, x, y, btn):
+   return state
+ 
+
 def tick(state):
     return state

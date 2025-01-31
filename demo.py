@@ -2,16 +2,27 @@
 import sim
 from sim.funs import *
 
-def init():
-    return 0
+# from collections import namedtuple
+# Posn = namedtuple('Posn', ['x', 'y'])
 
+def init():
+    return (0, 0)
+    #return Posn(0, 0)
+
+bat = mirror(contain(load_image("bat.png"), (200, 200)))
 
 def draw(state):
-    return sim.empty_scene()
+    (x, y) = state
+    return place_at(empty_scene(), bat, x % 800, y % 600)
 
 
 def tick(state):
-    return state
+    (x, y) = state
+    return (x + 2, y + 4)
+
+
+def mouse_click(state, x, y, btn):
+    return (x, y)
 
 
 if __name__ == '__main__':

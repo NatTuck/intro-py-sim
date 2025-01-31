@@ -1,5 +1,6 @@
 
 import sys
+import inspect
 import pyglet
 from PIL import Image
 
@@ -7,31 +8,30 @@ if __name__ == '__main__':
     print("This is a library.")
     sys.exit(1)
 
-app = sys.modules['__main__']
-import sim.defaults
-
-callbacks = {}
-for name in ['config', 'init', 'draw', 'tick']:
-    if name in app.__dict__:
-        callbacks[name] = getattr(app, name)
-    else:
-        callbacks[name] = getattr(defaults, name)
-        
-config = callbacks['config']()
-
-    
 def run():
+    app = sys.modules['__main__']
+    print(sorted(sys.modules.keys()))
+    import sim.defaults
+
+    callbacks = {}
+    print(app.__dict__)
+    for name in ['config', 'init', 'draw', 'tick',
+                 'key_press', 'mouse_click']:
+        if name in app.__dict__:
+            callbacks[name] = getattr(app, name)
+        else:
+            callbacks[name] = getattr(defaults, name)
+
+    config = callbacks['config']()
+
+    state = callbacks['init']()
+    
     window = pyglet.window.Window(
         caption=config['title'],
         width=config['width'],
         height=config['height'],
         resizable=config['resizable'])
 
-    # bat_image = load_image("images/bat.png")
-    # bat = pyglet.sprite.Sprite(bat_image, x=100, y=100)
-    # bat.scale = 0.5
-
-    state = callbacks['init']()
     
     @window.event
     def on_draw():
@@ -40,10 +40,26 @@ def run():
         sp = pyglet.sprite.Sprite(scene, x=0, y=0)
         sp.draw()
 
-
-    def tick():
+        
+    @window.event
+    def on_key_press(key, _mods):
         nonlocal state
-        state = callbacks['tick'](state)
+        state = callbacks['key_press'](state, key)
+
+
+    @window.event
+    def on_mouse_press(x, y, _btn, _mods):
+        nonlocal state
+        hh = config['height']
+        state = callbacks['mouse_click'](state, x, hh - y, "left")
+        
+        
+    def tick(dt):
+        nonlocal state
+        if (nparms(callbacks['tick']) == 1):
+            state = callbacks['tick'](state)
+        else:
+            state = callbacks['tick'](state, dt)
 
 
     if 'tick' in app.__dict__:
@@ -53,16 +69,11 @@ def run():
     pyglet.app.run()
 
 
-def load_image(path):
-    with Image.open(path) as im:
-        return im.convert('RGBA')
-
+def nparms(fn):
+    return len(inspect.signature(fn).parameters)
+            
 
 def convert_image(im):
     data = im.convert('RGBA').transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
     tx = pyglet.image.ImageData(im.width, im.height, 'RGBA', data)
     return tx
-
-
-def empty_scene(ww = 800, hh = 600):
-    return Image.new("RGBA", (ww, hh), "white")
