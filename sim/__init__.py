@@ -11,13 +11,12 @@ app = sys.modules['__main__']
 import sim.defaults
 
 callbacks = {}
-for name in ['init', 'draw', 'config']:
+for name in ['config', 'init', 'draw', 'tick']:
     if name in app.__dict__:
         callbacks[name] = getattr(app, name)
     else:
         callbacks[name] = getattr(defaults, name)
         
-state = callbacks['init']()
 config = callbacks['config']()
 
     
@@ -42,8 +41,9 @@ def run():
         sp.draw()
 
 
-    def tick(state):
-        return callbacks['tick'](state)
+    def tick():
+        nonlocal state
+        state = callbacks['tick'](state)
 
 
     if 'tick' in app.__dict__:

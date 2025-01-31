@@ -6,8 +6,12 @@ def init():
     return 0
 
 
-def draw():
-    sim.empty_scene()
+def draw(state):
+    return sim.empty_scene()
+
+
+def tick(state):
+    return state
 
 
 if __name__ == '__main__':

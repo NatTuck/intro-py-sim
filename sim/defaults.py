@@ -2,10 +2,6 @@
 from PIL import Image, ImageDraw
 
 
-def init():
-    return {}
-
-
 def config():
    return {
        'title': "Simulation",
@@ -15,8 +11,16 @@ def config():
    }
 
 
+def init():
+    return {}
+
+
 def draw(state):
     im = Image.new("RGBA", (800, 600), "white")
     dr = ImageDraw.Draw(im)
     dr.text((400, 300), "hello", fill=(0, 0, 0), font_size=100, anchor='mm')
     return im
+
+
+def tick(state):
+    return state
