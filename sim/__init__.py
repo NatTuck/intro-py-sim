@@ -39,8 +39,6 @@ def run():
 
     keys = set()
 
-    scene = convert_image(callbacks['draw'](state))
-    
     def on_draw():
         nonlocal scene
 
