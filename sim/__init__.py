@@ -1,20 +1,29 @@
 
 import sys
 import inspect
-import pyglet
+import gc
 from PIL import Image
+
+import pygame
+import os
+os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100,100)
+
+import tracemalloc
+tracemalloc.start()
+
+import sim.defaults
 
 if __name__ == '__main__':
     print("This is a library.")
     sys.exit(1)
 
 def run():
+    pygame.init()
+    clock = pygame.time.Clock()
+
     app = sys.modules['__main__']
-    print(sorted(sys.modules.keys()))
-    import sim.defaults
 
     callbacks = {}
-    print(app.__dict__)
     for name in ['config', 'init', 'draw', 'tick',
                  'key_press', 'mouse_click']:
         if name in app.__dict__:
@@ -25,29 +34,23 @@ def run():
     config = callbacks['config']()
 
     state = callbacks['init']()
-    
-    window = pyglet.window.Window(
-        caption=config['title'],
-        width=config['width'],
-        height=config['height'],
-        resizable=config['resizable'])
 
+    screen = pygame.display.set_mode((800, 600))
+
+    keys = set()
+
+    scene = convert_image(callbacks['draw'](state))
     
-    @window.event
     def on_draw():
-        window.clear()
+        nonlocal scene
+
         scene = convert_image(callbacks['draw'](state))
-        sp = pyglet.sprite.Sprite(scene, x=0, y=0)
-        sp.draw()
+
+        screen.fill("white")
+        screen.blit(scene, (0, 0))
+        pygame.display.flip()
 
         
-    @window.event
-    def on_key_press(key, _mods):
-        nonlocal state
-        state = callbacks['key_press'](state, key)
-
-
-    @window.event
     def on_mouse_press(x, y, _btn, _mods):
         nonlocal state
         hh = config['height']
@@ -56,17 +59,30 @@ def run():
         
     def tick(dt):
         nonlocal state
+        for key in keys:
+            state = callbacks['key_press'](state, key)
         if (nparms(callbacks['tick']) == 1):
             state = callbacks['tick'](state)
         else:
             state = callbacks['tick'](state, dt)
 
-
-    if 'tick' in app.__dict__:
-        pyglet.clock.schedule_interval(tick, 1 / 30.0)
-
+    while True:
+        dt = clock.tick(60) / 1000.0
         
-    pyglet.app.run()
+        for ev in pygame.event.get():
+            if ev.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit(0)
+            if ev.type == pygame.KEYDOWN:
+                keys.add(pygame.key.name(ev.key))
+            if ev.type == pygame.KEYUP:
+                keys.remove(pygame.key.name(ev.key))
+            if ev.type == pygame.MOUSEBUTTONDOWN:
+                (x, y) = pygame.mouse.get_pos()
+                state = callbacks['mouse_click'](state, x, y, "left")
+
+        tick(dt)
+        on_draw()
 
 
 def nparms(fn):
@@ -74,6 +90,7 @@ def nparms(fn):
             
 
 def convert_image(im):
-    data = im.convert('RGBA').transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
-    tx = pyglet.image.ImageData(im.width, im.height, 'RGBA', data)
-    return tx
+    data = im.convert('RGBA').tobytes()
+    return pygame.image.frombuffer(data, (im.width, im.height), "RGBA")
+
+
