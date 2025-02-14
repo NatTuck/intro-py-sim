@@ -45,7 +45,9 @@ def overlay(top, bot):
     return Image.alpha_composite(bot, tmp)
 
 
-def place_at(bot: Im, top: Im, xx: int, yy: int) -> Im:
+def place_at(bot: Im, top: Im, xx, yy) -> Im:
+    xx = int(xx)
+    yy = int(yy)
     tmp = Image.new("RGBA", (bot.width, bot.height), (0, 0, 0, 0))
     tmp.paste(top, (xx - top.width // 2, yy - top.height // 2))
     return Image.alpha_composite(bot, tmp)

@@ -8,9 +8,6 @@ import pygame
 import os
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100,100)
 
-import tracemalloc
-tracemalloc.start()
-
 import sim.defaults
 
 if __name__ == '__main__':
@@ -40,8 +37,6 @@ def run():
     keys = set()
 
     def on_draw():
-        nonlocal scene
-
         scene = convert_image(callbacks['draw'](state))
 
         screen.fill("white")
