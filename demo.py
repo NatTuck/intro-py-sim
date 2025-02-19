@@ -25,5 +25,9 @@ def mouse_click(state, x, y, btn):
     return (x, y)
 
 
+def key_press(state, key):
+    return state
+
+
 if __name__ == '__main__':
     sim.run()
