@@ -1,89 +1,76 @@
 
-import sys
-import inspect
-import gc
-from PIL import Image
+from pathlib import Path
+import PIL
+from PIL import ImageFont, ImageDraw, ImageOps
+from PIL.ImageOps import *
+from PIL.Image import Image
 
-import pygame
-import os
-os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (100,100)
+import sim.engine
 
-import sim.defaults
 
-if __name__ == '__main__':
-    print("This is a library.")
-    sys.exit(1)
+def run_sim():
+    sim.engine.run()
 
-def run():
-    pygame.init()
-    clock = pygame.time.Clock()
 
-    app = sys.modules['__main__']
+def empty_scene(ww = 800, hh = 600):
+    """Create an empty scene with a white background."""
+    return PIL.Image.new("RGBA", (ww, hh), "white")
 
-    callbacks = {}
-    for name in ['config', 'init', 'draw', 'tick',
-                 'key_press', 'mouse_click']:
-        if name in app.__dict__:
-            callbacks[name] = getattr(app, name)
-        else:
-            callbacks[name] = getattr(defaults, name)
 
-    config = callbacks['config']()
+def text(text, size = 100.0, color = "black"):
+    font = ImageFont.load_default(size)
+    (l, t, r, b) = font.getbbox(text)
 
-    state = callbacks['init']()
+    ww = r + l
+    hh = b + t
+    bg = PIL.Image.new("RGBA", (ww, hh), (0, 0, 0, 0))
+    dr = ImageDraw.Draw(bg)
+    dr.text((ww//2, hh//2), text, fill=color, font_size=size, anchor='mm')
 
-    screen = pygame.display.set_mode((800, 600))
+    return bg
 
-    keys = set()
 
-    def on_draw():
-        scene = convert_image(callbacks['draw'](state))
+def rectangle(ww, hh, color = "black"):
+    bg = PIL.Image.new("RGBA", (ww, hh), (0, 0, 0, 0))
+    dr = ImageDraw.Draw(bg)
+    dr.rectangle([0, 0, ww, hh], color)
+    return bg
 
-        screen.fill("white")
-        screen.blit(scene, (0, 0))
-        pygame.display.flip()
 
+def circle(rad, color = "black"):
+    bg = PIL.Image.new("RGBA", (2*rad + 1, 2*rad + 1), (0, 0, 0, 0))
+    dr = ImageDraw.Draw(bg)
+    dr.ellipse((0, 0, 2*rad, 2*rad), color)
+    return bg
+   
+
+def overlay(top, bot):
+    assert type(bot) == Image
+    assert type(top) == Image
+
+    tmp = PIL.Image.new("RGBA", (bot.width, bot.height), (0, 0, 0, 0))
+    tt = bot.height // 2 - top.height // 2
+    ll = bot.width // 2 - top.width // 2
+    tmp.paste(top, (ll, tt))
+    return Image.alpha_composite(bot, tmp)
+
+
+def place_at(bot: Image, top: Image, xx, yy) -> Image:
+    assert type(bot) == Image
+    assert type(top) == Image
+
+    xx = int(xx)
+    yy = int(yy)
+    tmp = PIL.Image.new("RGBA", (bot.width, bot.height), (0, 0, 0, 0))
+    tmp.paste(top, (xx - top.width // 2, yy - top.height // 2))
+    return PIL.Image.alpha_composite(bot, tmp)
+
+
+def load_image(path):
+    if not Path(path).exists():
+        path = Path(__file__).parent / "images" / path
+    with PIL.Image.open(path) as im:
+        return im.convert('RGBA')
         
-    def on_mouse_press(x, y, _btn, _mods):
-        nonlocal state
-        hh = config['height']
-        state = callbacks['mouse_click'](state, x, hh - y, "left")
-        
-        
-    def tick(dt):
-        nonlocal state
-        for key in keys:
-            state = callbacks['key_press'](state, key)
-        if (nparms(callbacks['tick']) == 1):
-            state = callbacks['tick'](state)
-        else:
-            state = callbacks['tick'](state, dt)
-
-    while True:
-        dt = clock.tick(60) / 1000.0
-        
-        for ev in pygame.event.get():
-            if ev.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit(0)
-            if ev.type == pygame.KEYDOWN:
-                keys.add(pygame.key.name(ev.key))
-            if ev.type == pygame.KEYUP:
-                keys.remove(pygame.key.name(ev.key))
-            if ev.type == pygame.MOUSEBUTTONDOWN:
-                (x, y) = pygame.mouse.get_pos()
-                state = callbacks['mouse_click'](state, x, y, "left")
-
-        tick(dt)
-        on_draw()
-
-
-def nparms(fn):
-    return len(inspect.signature(fn).parameters)
-            
-
-def convert_image(im):
-    data = im.convert('RGBA').tobytes()
-    return pygame.image.frombuffer(data, (im.width, im.height), "RGBA")
 
 

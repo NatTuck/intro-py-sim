@@ -28,6 +28,10 @@ def key_press(state, key):
 
 def mouse_click(state, x, y, btn):
    return state
+
+
+def mouse_move(state, x, y, btns):
+   return state
  
 
 def tick(state):

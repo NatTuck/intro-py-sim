@@ -1,6 +1,5 @@
 
-import sim
-from sim.funs import *
+from sim import *
 
 # from collections import namedtuple
 # Posn = namedtuple('Posn', ['x', 'y'])
@@ -30,4 +29,4 @@ def key_press(state, key):
 
 
 if __name__ == '__main__':
-    sim.run()
+    run_sim()
